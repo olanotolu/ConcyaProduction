@@ -31,3 +31,4 @@ See `server/deployment/deploy.md` for GCP deployment instructions.
 - [Architecture](docs/ARCHITECTURE.md)
 - [Setup Guide](docs/SETUP.md)
 - [API Reference](docs/API.md)
+✅ STT Server: Running on GCP at 34.138.105.85:8080
