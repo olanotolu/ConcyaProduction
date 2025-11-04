@@ -9,7 +9,9 @@
 # ///
 import argparse
 import asyncio
+import json
 import signal
+import time
 
 import msgpack
 import numpy as np
@@ -24,23 +26,54 @@ SAMPLE_RATE = 24000
 PAUSE_PREDICTION_HEAD_INDEX = 2
 
 
-async def receive_messages(websocket, show_vad: bool = False):
+async def receive_messages(websocket, show_vad: bool = False, json_output: bool = False):
     """Receive and process messages from the WebSocket server."""
     try:
         speech_started = False
+        current_utterance = []
+        utterance_start_time = None
+        
         async for message in websocket:
             data = msgpack.unpackb(message, raw=False)
 
             # The Step message only gets sent if the model has semantic VAD available
-            if data["type"] == "Step" and show_vad:
+            if data["type"] == "Step":
                 pause_prediction = data["prs"][PAUSE_PREDICTION_HEAD_INDEX]
                 if pause_prediction > 0.5 and speech_started:
-                    print("| ", end="", flush=True)
+                    if json_output and current_utterance:
+                        # Output complete utterance as JSON
+                        output = {
+                            "timestamp": utterance_start_time,
+                            "text": " ".join(current_utterance),
+                            "speaker": "user",
+                            "confidence": 0.95  # Default confidence (server doesn't provide this yet)
+                        }
+                        print(json.dumps(output), flush=True)
+                        current_utterance = []
+                        utterance_start_time = None
+                    elif show_vad and not json_output:
+                        print("| ", end="", flush=True)
                     speech_started = False
 
             elif data["type"] == "Word":
-                print(data["text"], end=" ", flush=True)
+                if json_output:
+                    if utterance_start_time is None:
+                        utterance_start_time = time.time()
+                    current_utterance.append(data["text"])
+                else:
+                    print(data["text"], end=" ", flush=True)
                 speech_started = True
+                
+        # Output any remaining utterance
+        if json_output and current_utterance:
+            output = {
+                "timestamp": utterance_start_time,
+                "text": " ".join(current_utterance),
+                "speaker": "user",
+                "confidence": 0.95
+            }
+            print(json.dumps(output), flush=True)
+            
     except websockets.ConnectionClosed:
         print("Connection closed while receiving messages.")
 
@@ -64,10 +97,11 @@ async def send_messages(websocket, audio_queue):
         print("Connection closed while sending messages.")
 
 
-async def stream_audio(url: str, api_key: str, show_vad: bool):
+async def stream_audio(url: str, api_key: str, show_vad: bool, json_output: bool):
     """Stream audio data to a WebSocket server."""
-    print("Starting microphone recording...")
-    print("Press Ctrl+C to stop recording")
+    if not json_output:
+        print("Starting microphone recording...")
+        print("Press Ctrl+C to stop recording")
     audio_queue = asyncio.Queue()
 
     loop = asyncio.get_event_loop()
@@ -90,7 +124,7 @@ async def stream_audio(url: str, api_key: str, show_vad: bool):
         async with websockets.connect(url, additional_headers=headers) as websocket:
             send_task = asyncio.create_task(send_messages(websocket, audio_queue))
             receive_task = asyncio.create_task(
-                receive_messages(websocket, show_vad=show_vad)
+                receive_messages(websocket, show_vad=show_vad, json_output=json_output)
             )
             await asyncio.gather(send_task, receive_task)
 
@@ -114,6 +148,11 @@ if __name__ == "__main__":
         action="store_true",
         help="Visualize the predictions of the semantic voice activity detector with a '|' symbol",
     )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Output structured JSON format with timestamp, text, speaker, and confidence",
+    )
 
     args = parser.parse_args()
 
@@ -132,4 +171,4 @@ if __name__ == "__main__":
         sd.default.device[0] = args.device  # Set input device
 
     url = f"{args.url}/api/asr-streaming"
-    asyncio.run(stream_audio(url, args.api_key, args.show_vad))
+    asyncio.run(stream_audio(url, args.api_key, args.show_vad, args.json))
