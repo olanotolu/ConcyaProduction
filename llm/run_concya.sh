@@ -2,8 +2,9 @@
 # Concya STT → LLM Runner
 # Quick start script for connecting speech to OpenAI
 
-# Your OpenAI API key
-OPENAI_API_KEY="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"
+# Your OpenAI API key (set as environment variable)
+# export OPENAI_API_KEY="your-key-here"
+OPENAI_API_KEY="${OPENAI_API_KEY:-your-openai-api-key-here}"
 
 # STT Server URL (your GCP server)
 STT_URL="ws://34.26.22.244:8080"
