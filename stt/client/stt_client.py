@@ -26,14 +26,18 @@ SAMPLE_RATE = 24000
 PAUSE_PREDICTION_HEAD_INDEX = 2
 
 
-async def receive_messages(websocket, show_vad: bool = False, json_output: bool = False):
+async def receive_messages(websocket, show_vad: bool = False, json_output: bool = False, show_latency: bool = False):
     """Receive and process messages from the WebSocket server."""
     try:
         speech_started = False
         current_utterance = []
         utterance_start_time = None
+        first_word_time = None
+        last_audio_sent_time = None
+        word_latencies = []
         
         async for message in websocket:
+            receive_time = time.time()
             data = msgpack.unpackb(message, raw=False)
 
             # The Step message only gets sent if the model has semantic VAD available
@@ -41,6 +45,9 @@ async def receive_messages(websocket, show_vad: bool = False, json_output: bool 
                 pause_prediction = data["prs"][PAUSE_PREDICTION_HEAD_INDEX]
                 if pause_prediction > 0.5 and speech_started:
                     if json_output and current_utterance:
+                        # Calculate average latency for this utterance
+                        avg_latency = sum(word_latencies) / len(word_latencies) if word_latencies else 0
+                        
                         # Output complete utterance as JSON
                         output = {
                             "timestamp": utterance_start_time,
@@ -48,20 +55,46 @@ async def receive_messages(websocket, show_vad: bool = False, json_output: bool 
                             "speaker": "user",
                             "confidence": 0.95  # Default confidence (server doesn't provide this yet)
                         }
+                        
+                        if show_latency:
+                            output["latency_ms"] = round(avg_latency * 1000, 1)
+                            output["words_count"] = len(current_utterance)
+                        
                         print(json.dumps(output), flush=True)
                         current_utterance = []
                         utterance_start_time = None
+                        word_latencies = []
                     elif show_vad and not json_output:
                         print("| ", end="", flush=True)
+                    
+                    # Show latency summary for standard mode
+                    if show_latency and not json_output and word_latencies:
+                        avg_latency = sum(word_latencies) / len(word_latencies)
+                        print(f" [⚡ {avg_latency*1000:.0f}ms]", end="", flush=True)
+                        word_latencies = []
+                    
+                    # Reset for next utterance
                     speech_started = False
+                    utterance_start_time = None
 
             elif data["type"] == "Word":
+                # Set utterance start time on first word
+                if utterance_start_time is None:
+                    utterance_start_time = receive_time
+                    first_word_time = receive_time
+                
+                # Calculate latency: time elapsed since utterance started
+                word_latency = receive_time - utterance_start_time
+                word_latencies.append(word_latency)
+                
                 if json_output:
-                    if utterance_start_time is None:
-                        utterance_start_time = time.time()
                     current_utterance.append(data["text"])
                 else:
-                    print(data["text"], end=" ", flush=True)
+                    if show_latency:
+                        # Show word with latency in standard mode
+                        print(f"{data['text']}⚡{word_latency*1000:.0f} ", end="", flush=True)
+                    else:
+                        print(data["text"], end=" ", flush=True)
                 speech_started = True
                 
         # Output any remaining utterance
@@ -97,11 +130,13 @@ async def send_messages(websocket, audio_queue):
         print("Connection closed while sending messages.")
 
 
-async def stream_audio(url: str, api_key: str, show_vad: bool, json_output: bool):
+async def stream_audio(url: str, api_key: str, show_vad: bool, json_output: bool, show_latency: bool):
     """Stream audio data to a WebSocket server."""
     if not json_output:
         print("Starting microphone recording...")
         print("Press Ctrl+C to stop recording")
+        if show_latency:
+            print("⚡ Latency monitoring enabled")
     audio_queue = asyncio.Queue()
 
     loop = asyncio.get_event_loop()
@@ -124,7 +159,7 @@ async def stream_audio(url: str, api_key: str, show_vad: bool, json_output: bool
         async with websockets.connect(url, additional_headers=headers) as websocket:
             send_task = asyncio.create_task(send_messages(websocket, audio_queue))
             receive_task = asyncio.create_task(
-                receive_messages(websocket, show_vad=show_vad, json_output=json_output)
+                receive_messages(websocket, show_vad=show_vad, json_output=json_output, show_latency=show_latency)
             )
             await asyncio.gather(send_task, receive_task)
 
@@ -153,6 +188,11 @@ if __name__ == "__main__":
         action="store_true",
         help="Output structured JSON format with timestamp, text, speaker, and confidence",
     )
+    parser.add_argument(
+        "--latency",
+        action="store_true",
+        help="Show latency metrics (processing time per word/utterance)",
+    )
 
     args = parser.parse_args()
 
@@ -171,4 +211,4 @@ if __name__ == "__main__":
         sd.default.device[0] = args.device  # Set input device
 
     url = f"{args.url}/api/asr-streaming"
-    asyncio.run(stream_audio(url, args.api_key, args.show_vad, args.json))
+    asyncio.run(stream_audio(url, args.api_key, args.show_vad, args.json, args.latency))
