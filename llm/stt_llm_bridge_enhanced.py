@@ -9,9 +9,15 @@ import json
 import subprocess
 import signal
 import os
+import sys
 import time
+
+# Add TTS module to path
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'tts'))
+
 from openai_connector import OpenAIConnector
 from intent_parser import IntentParser
+from cartesia_tts import CartesiaTTS
 
 
 class ReservationAgent:
@@ -168,6 +174,15 @@ async def main():
     # Initialize reservation agent
     agent = ReservationAgent(llm_connector)
 
+    # Initialize TTS (will raise error if API key not set)
+    try:
+        tts_client = CartesiaTTS()
+        print("🎵 TTS initialized with Cartesia Sonic-3")
+    except Exception as e:
+        print(f"⚠️  TTS initialization failed: {e}")
+        print("💡 Set CARTESIA_API_KEY environment variable")
+        tts_client = None
+
     # Start STT client as a subprocess
     stt_client_path = os.path.join(os.path.dirname(__file__), "..", "stt", "client", "stt_client.py")
     stt_process = subprocess.Popen(
@@ -216,12 +231,29 @@ async def main():
                         if args.mode == "structured":
                             response = agent.process_user_input(combined_text)
                             print(f"🤖 Assistant: {response}")
+
+                            # Speak the response if TTS is available
+                            if tts_client:
+                                try:
+                                    tts_client.speak(response)
+                                except Exception as e:
+                                    print(f"⚠️  TTS failed: {e}")
+
                         else:
                             print("🤖 Assistant: ", end="", flush=True)
+                            full_response = ""
                             response_generator = llm_connector.get_chat_response(combined_text)
                             for chunk in response_generator:
                                 print(chunk, end="", flush=True)
+                                full_response += chunk
                             print()
+
+                            # Speak the response if TTS is available
+                            if tts_client:
+                                try:
+                                    tts_client.speak(full_response)
+                                except Exception as e:
+                                    print(f"⚠️  TTS failed: {e}")
                         
                         print("-" * 60)
                         utterance_buffer = []
