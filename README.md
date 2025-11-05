@@ -2,6 +2,14 @@
 
 Production-ready Speech-to-Text system for restaurant reservations.
 
+## ⚡ Quick Start
+
+**👉 NEW USER? Read this first: [START_HERE.md](START_HERE.md)**
+
+The `START_HERE.md` file contains a simple 5-minute guide to get you up and running. This README has detailed technical documentation.
+
+---
+
 ## Architecture
 
 - **Client**: Python WebSocket client (runs on local machine)

@@ -33,7 +33,7 @@ def process_transcription(data):
 
 def main():
     """Run the STT client and process JSON output."""
-    server_url = sys.argv[1] if len(sys.argv) > 1 else "ws://34.26.22.244:8080"
+    server_url = sys.argv[1] if len(sys.argv) > 1 else "ws://34.26.22.244:8080/api/asr-streaming"
     
     print(f"Starting Concya STT client connected to {server_url}")
     print("Speak into your microphone. Press Ctrl+C to stop.\n")

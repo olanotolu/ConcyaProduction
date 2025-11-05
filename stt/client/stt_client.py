@@ -169,7 +169,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--url",
         help="The URL of the server to which to send the audio",
-        default="ws://127.0.0.1:8080",
+        default="ws://34.26.22.244:8080/api/asr-streaming",
     )
     parser.add_argument("--api-key", default="public_token")
     parser.add_argument(
@@ -210,5 +210,5 @@ if __name__ == "__main__":
     if args.device is not None:
         sd.default.device[0] = args.device  # Set input device
 
-    url = f"{args.url}/api/asr-streaming"
+    url = args.url
     asyncio.run(stream_audio(url, args.api_key, args.show_vad, args.json, args.latency))

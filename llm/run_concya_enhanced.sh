@@ -6,10 +6,10 @@
 # --- Configuration ---
 # Your OpenAI API Key (NEVER COMMIT THIS TO GIT!)
 # Set this environment variable: export OPENAI_API_KEY="your-key-here"
-OPENAI_API_KEY="${OPENAI_API_KEY:-your-openai-api-key-here}"
+OPENAI_API_KEY="${OPENAI_API_KEY:-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}"
 
 # Your GCP STT Server URL
-STT_SERVER_URL="ws://34.26.22.244:8080"
+STT_SERVER_URL="ws://34.26.22.244:8080/api/asr-streaming"
 
 # OpenAI Model to use
 LLM_MODEL="gpt-3.5-turbo" # Faster and cheaper than gpt-4
