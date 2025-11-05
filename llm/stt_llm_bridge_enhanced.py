@@ -9,6 +9,7 @@ import json
 import subprocess
 import signal
 import os
+import time
 from openai_connector import OpenAIConnector
 from intent_parser import IntentParser
 
@@ -193,6 +194,11 @@ async def main():
 
     signal.signal(signal.SIGINT, handle_sigint)
 
+    # Buffer for combining utterances
+    utterance_buffer = []
+    last_utterance_time = time.time()
+    BUFFER_TIMEOUT = 1.5  # Wait 1.5 seconds after last utterance before processing
+
     try:
         for line in stt_process.stdout:
             try:
@@ -200,21 +206,32 @@ async def main():
                 user_text = stt_data.get('text', '').strip()
 
                 if user_text:
-                    print(f"\n👤 User: {user_text}")
+                    current_time = time.time()
                     
-                    if args.mode == "structured":
-                        # Use structured intent parsing
-                        response = agent.process_user_input(user_text)
-                        print(f"🤖 Assistant: {response}")
-                    else:
-                        # Use pure LLM mode
-                        print("🤖 Assistant: ", end="", flush=True)
-                        response_generator = llm_connector.get_chat_response(user_text)
-                        for chunk in response_generator:
-                            print(chunk, end="", flush=True)
-                        print()
+                    # If it's been too long since last utterance, process buffer first
+                    if utterance_buffer and (current_time - last_utterance_time) > BUFFER_TIMEOUT:
+                        combined_text = " ".join(utterance_buffer)
+                        print(f"\n👤 User: {combined_text}")
+                        
+                        if args.mode == "structured":
+                            response = agent.process_user_input(combined_text)
+                            print(f"🤖 Assistant: {response}")
+                        else:
+                            print("🤖 Assistant: ", end="", flush=True)
+                            response_generator = llm_connector.get_chat_response(combined_text)
+                            for chunk in response_generator:
+                                print(chunk, end="", flush=True)
+                            print()
+                        
+                        print("-" * 60)
+                        utterance_buffer = []
                     
-                    print("-" * 60)
+                    # Add to buffer and update time
+                    utterance_buffer.append(user_text)
+                    last_utterance_time = current_time
+                    
+                    # Show partial transcription
+                    print(f"🎤 Hearing: {user_text}", flush=True)
 
             except json.JSONDecodeError:
                 print(f"⚠️  Error decoding JSON: {line.strip()}")

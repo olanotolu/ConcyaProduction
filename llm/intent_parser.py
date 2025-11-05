@@ -155,12 +155,14 @@ class IntentParser:
     
     def _extract_party_size(self, text: str) -> Optional[int]:
         """Extract number of people."""
-        # Pattern: "X people", "party of X", "for X"
+        # Pattern: "X people", "party of X", "for X", or just standalone numbers
         patterns = [
             r'\b(\d+)\s+(?:people|person|guests?|pax)\b',
             r'\bparty\s+of\s+(\d+)\b',
             r'\bfor\s+(\d+)\b',
             r'\b(one|two|three|four|five|six|seven|eight|nine|ten)\s+(?:people|person|guests?)\b',
+            r'\b(\d+)\b',  # Standalone digits like "4" or "5"
+            r'\b(one|two|three|four|five|six|seven|eight|nine|ten)\b',  # Standalone words like "three"
         ]
         
         number_words = {

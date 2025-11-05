@@ -8,6 +8,9 @@
 # Set this environment variable: export OPENAI_API_KEY="your-key-here"
 OPENAI_API_KEY="${OPENAI_API_KEY:-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}"
 
+# Your Cartesia API Key for TTS
+CARTESIA_API_KEY="${CARTESIA_API_KEY:-sk_car_89jTmTuqUSb2ZjCoAa96TP}"
+
 # Your GCP STT Server URL
 STT_SERVER_URL="ws://34.26.22.244:8080/api/asr-streaming"
 
@@ -29,6 +32,9 @@ echo "------------------------------------------------------------"
 # Ensure Python dependencies are installed
 echo "Installing Python dependencies..."
 pip install -q -r requirements.txt
+
+# Export environment variables for the Python script
+export CARTESIA_API_KEY="$CARTESIA_API_KEY"
 
 # Run the enhanced STT-LLM bridge script
 python stt_llm_bridge_enhanced.py \
