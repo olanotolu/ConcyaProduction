@@ -224,8 +224,8 @@ async def main():
     # Buffer for combining utterances
     utterance_buffer = []
     last_utterance_time = time.time()
-    BUFFER_TIMEOUT = 0.3  # Wait 0.3 seconds after last utterance before processing (faster response)
-    MAX_UTTERANCE_TIME = 2.5  # Maximum time for an utterance before forcing processing
+    BUFFER_TIMEOUT = 0.5  # Wait 0.5 seconds after last utterance before processing (better for short utterances)
+    MAX_UTTERANCE_TIME = 3.0  # Maximum time for an utterance before forcing processing
     utterance_start_time = None
 
     try:
@@ -260,13 +260,12 @@ async def main():
                             print(f"🤖 Assistant: {response}")
 
                             # Speak the response if TTS is available
-                            # Note: TTS will cause audio feedback - consider disabling or implementing echo cancellation
-                            # Commenting out TTS for now to prevent feedback loop
-                            # if tts_client:
-                            #     try:
-                            #         tts_client.speak(response)
-                            #     except Exception as e:
-                            #         print(f"⚠️  TTS failed: {e}")
+                            if tts_client:
+                                try:
+                                    tts_client.speak(response)
+                                    print("🔊 TTS played")
+                                except Exception as e:
+                                    print(f"⚠️  TTS failed: {e}")
 
                         else:
                             print("🤖 Assistant: ", end="", flush=True)
@@ -278,13 +277,12 @@ async def main():
                             print()
 
                             # Speak the response if TTS is available
-                            # Note: TTS will cause audio feedback - consider disabling or implementing echo cancellation
-                            # Commenting out TTS for now to prevent feedback loop
-                            # if tts_client:
-                            #     try:
-                            #         tts_client.speak(full_response)
-                            #     except Exception as e:
-                            #         print(f"⚠️  TTS failed: {e}")
+                            if tts_client:
+                                try:
+                                    tts_client.speak(full_response)
+                                    print("🔊 TTS played")
+                                except Exception as e:
+                                    print(f"⚠️  TTS failed: {e}")
 
                         print("-" * 60)
                         utterance_buffer = []
