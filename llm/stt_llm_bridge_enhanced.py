@@ -212,7 +212,9 @@ async def main():
     # Buffer for combining utterances
     utterance_buffer = []
     last_utterance_time = time.time()
-    BUFFER_TIMEOUT = 1.5  # Wait 1.5 seconds after last utterance before processing
+    BUFFER_TIMEOUT = 0.8  # Wait 0.8 seconds after last utterance before processing
+    MAX_UTTERANCE_TIME = 3.0  # Maximum time for an utterance before forcing processing
+    utterance_start_time = None
 
     try:
         for line in stt_process.stdout:
@@ -222,12 +224,25 @@ async def main():
 
                 if user_text:
                     current_time = time.time()
-                    
-                    # If it's been too long since last utterance, process buffer first
-                    if utterance_buffer and (current_time - last_utterance_time) > BUFFER_TIMEOUT:
+
+                    # If this is a new utterance (buffer was empty), start timing
+                    if not utterance_buffer:
+                        utterance_start_time = current_time
+
+                    # Check if we should process the current buffer
+                    time_since_last = current_time - last_utterance_time
+                    time_since_start = current_time - utterance_start_time if utterance_start_time else 0
+
+                    # Process if: pause detected OR utterance is too long
+                    should_process = utterance_buffer and (
+                        time_since_last > BUFFER_TIMEOUT or
+                        time_since_start > MAX_UTTERANCE_TIME
+                    )
+
+                    if should_process:
                         combined_text = " ".join(utterance_buffer)
                         print(f"\n👤 User: {combined_text}")
-                        
+
                         if args.mode == "structured":
                             response = agent.process_user_input(combined_text)
                             print(f"🤖 Assistant: {response}")
@@ -254,14 +269,15 @@ async def main():
                                     tts_client.speak(full_response)
                                 except Exception as e:
                                     print(f"⚠️  TTS failed: {e}")
-                        
+
                         print("-" * 60)
                         utterance_buffer = []
-                    
-                    # Add to buffer and update time
+                        utterance_start_time = None
+
+                    # Always add to buffer and update last utterance time
                     utterance_buffer.append(user_text)
                     last_utterance_time = current_time
-                    
+
                     # Show partial transcription
                     print(f"🎤 Hearing: {user_text}", flush=True)
 
