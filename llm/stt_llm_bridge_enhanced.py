@@ -248,11 +248,13 @@ async def main():
                             print(f"🤖 Assistant: {response}")
 
                             # Speak the response if TTS is available
-                            if tts_client:
-                                try:
-                                    tts_client.speak(response)
-                                except Exception as e:
-                                    print(f"⚠️  TTS failed: {e}")
+                            # Note: TTS will cause audio feedback - consider disabling or implementing echo cancellation
+                            # Commenting out TTS for now to prevent feedback loop
+                            # if tts_client:
+                            #     try:
+                            #         tts_client.speak(response)
+                            #     except Exception as e:
+                            #         print(f"⚠️  TTS failed: {e}")
 
                         else:
                             print("🤖 Assistant: ", end="", flush=True)
@@ -264,11 +266,13 @@ async def main():
                             print()
 
                             # Speak the response if TTS is available
-                            if tts_client:
-                                try:
-                                    tts_client.speak(full_response)
-                                except Exception as e:
-                                    print(f"⚠️  TTS failed: {e}")
+                            # Note: TTS will cause audio feedback - consider disabling or implementing echo cancellation
+                            # Commenting out TTS for now to prevent feedback loop
+                            # if tts_client:
+                            #     try:
+                            #         tts_client.speak(full_response)
+                            #     except Exception as e:
+                            #         print(f"⚠️  TTS failed: {e}")
 
                         print("-" * 60)
                         utterance_buffer = []
