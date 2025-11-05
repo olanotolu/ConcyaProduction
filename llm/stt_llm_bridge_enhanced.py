@@ -212,8 +212,8 @@ async def main():
     # Buffer for combining utterances
     utterance_buffer = []
     last_utterance_time = time.time()
-    BUFFER_TIMEOUT = 0.8  # Wait 0.8 seconds after last utterance before processing
-    MAX_UTTERANCE_TIME = 3.0  # Maximum time for an utterance before forcing processing
+    BUFFER_TIMEOUT = 0.3  # Wait 0.3 seconds after last utterance before processing (faster response)
+    MAX_UTTERANCE_TIME = 2.5  # Maximum time for an utterance before forcing processing
     utterance_start_time = None
 
     try:
