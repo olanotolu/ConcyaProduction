@@ -17,7 +17,7 @@ Python WebSocket client for real-time STT from microphone to cloud server.
 ```bash
 cd client
 pip install -r requirements.txt
-python stt_client.py --url ws://34.138.105.85:8080
+python stt_client.py --url ws://34.26.22.244:8080
 ```
 
 See [client/README.md](client/README.md) for complete documentation.
@@ -78,12 +78,12 @@ cargo build --release --features cuda
 ### Standard Text Output
 ```bash
 cd client
-python stt_client.py --url ws://34.138.105.85:8080
+python stt_client.py --url ws://34.26.22.244:8080
 ```
 
 ### JSON Output (For Integration)
 ```bash
-python stt_client.py --url ws://34.138.105.85:8080 --json
+python stt_client.py --url ws://34.26.22.244:8080 --json
 ```
 
 **Output:**
@@ -93,7 +93,7 @@ python stt_client.py --url ws://34.138.105.85:8080 --json
 
 ### With Latency Monitoring
 ```bash
-python stt_client.py --url ws://34.138.105.85:8080 --latency
+python stt_client.py --url ws://34.26.22.244:8080 --latency
 ```
 
 **Output:**

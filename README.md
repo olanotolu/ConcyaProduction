@@ -14,12 +14,12 @@ Production-ready Speech-to-Text system for restaurant reservations.
 ```bash
 cd stt/client
 pip install -r requirements.txt
-python stt_client.py --url ws://34.138.105.85:8080
+python stt_client.py --url ws://34.26.22.244:8080
 ```
 
 ### Structured JSON Output
 ```bash
-python stt_client.py --url ws://34.138.105.85:8080 --json
+python stt_client.py --url ws://34.26.22.244:8080 --json
 ```
 
 **Output:**
@@ -68,7 +68,7 @@ See `stt/server/deployment/deploy.md` for GCP deployment instructions.
 
 ## Current Status
 
-- **STT Server**: Running on GCP at 34.138.105.85:8080
+- **STT Server**: Running on GCP at 34.26.22.244:8080
 - **STT Client**: Tested and working (v1.2.0)
 - **LLM**: Connected to OpenAI GPT-4 ✨
 - **Intent Parser**: Extracts structured reservation data 🧠
@@ -115,14 +115,14 @@ cd stt/client
 python stt_client.py --list-devices
 
 # Use specific microphone with JSON output
-python stt_client.py --url ws://34.138.105.85:8080 --device 1 --json
+python stt_client.py --url ws://34.26.22.244:8080 --device 1 --json
 
 # Monitor latency in real-time ⚡
-python stt_client.py --url ws://34.138.105.85:8080 --latency
+python stt_client.py --url ws://34.26.22.244:8080 --latency
 
 # JSON with latency metrics
-python stt_client.py --url ws://34.138.105.85:8080 --json --latency
+python stt_client.py --url ws://34.26.22.244:8080 --json --latency
 
 # Run example consumer
-python example_json_consumer.py ws://34.138.105.85:8080
+python example_json_consumer.py ws://34.26.22.244:8080
 ```

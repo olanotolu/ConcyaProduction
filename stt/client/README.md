@@ -6,13 +6,13 @@ Real-time speech-to-text client that connects to GCP STT server.
 
 ```bash
 # Standard text output
-python stt_client.py --url ws://34.138.105.85:8080
+python stt_client.py --url ws://34.26.22.244:8080
 
 # JSON structured output (for LLM integration)
-python stt_client.py --url ws://34.138.105.85:8080 --json
+python stt_client.py --url ws://34.26.22.244:8080 --json
 
 # With latency monitoring
-python stt_client.py --url ws://34.138.105.85:8080 --latency
+python stt_client.py --url ws://34.26.22.244:8080 --latency
 ```
 
 ## Files
