@@ -12,6 +12,13 @@ import os
 import sys
 import time
 
+# Load environment variables from .env file (if it exists)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    print("⚠️  python-dotenv not installed. Install with: pip install python-dotenv")
+
 # Add TTS module to path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'tts'))
 
@@ -156,7 +163,7 @@ Is there anything else I can help you with today?
 async def main():
     parser = argparse.ArgumentParser(description="Concya Enhanced STT to LLM Bridge")
     parser.add_argument("--stt-url", default="ws://127.0.0.1:8080", help="URL of the STT server")
-    parser.add_argument("--openai-key", required=True, help="Your OpenAI API Key")
+    parser.add_argument("--openai-key", help="Your OpenAI API Key (optional - loaded from .env)")
     parser.add_argument("--model", default="gpt-4", help="OpenAI model to use")
     parser.add_argument("--mode", default="structured", choices=["structured", "llm"], 
                        help="structured: use intent parser, llm: use pure LLM")
@@ -168,19 +175,24 @@ async def main():
     print("Speak naturally to make a reservation...")
     print("Press Ctrl+C to stop\n")
 
-    # Initialize LLM connector (still used for some responses)
-    llm_connector = OpenAIConnector(api_key=args.openai_key, model=args.model)
+    # Initialize LLM connector with API key from environment (.env file or argument)
+    OPENAI_API_KEY = args.openai_key or os.getenv("OPENAI_API_KEY")
+    if not OPENAI_API_KEY:
+        raise ValueError("OPENAI_API_KEY not found. Set it in .env file or pass --openai-key argument")
+    llm_connector = OpenAIConnector(api_key=OPENAI_API_KEY, model=args.model)
     
     # Initialize reservation agent
     agent = ReservationAgent(llm_connector)
 
-    # Initialize TTS (will raise error if API key not set)
+    # Initialize TTS with API key from environment (.env file)
     try:
-        tts_client = CartesiaTTS()
+        CARTESIA_API_KEY = os.getenv("CARTESIA_API_KEY")
+        if not CARTESIA_API_KEY:
+            raise ValueError("CARTESIA_API_KEY not found in .env file")
+        tts_client = CartesiaTTS(api_key=CARTESIA_API_KEY)
         print("🎵 TTS initialized with Cartesia Sonic-3")
     except Exception as e:
         print(f"⚠️  TTS initialization failed: {e}")
-        print("💡 Set CARTESIA_API_KEY environment variable")
         tts_client = None
 
     # Start STT client as a subprocess
