@@ -1,3 +1,0 @@
-# Mock LLM Server Dependencies
-fastapi>=0.100.0
-uvicorn[standard]>=0.20.0

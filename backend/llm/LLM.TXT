@@ -1,0 +1,186 @@
+Here’s your **reproducible setup guide** for redeploying the Concya LLM server from scratch — saved as a `.md` file template.
+
+---
+
+### **Filename:** `LLM_DEPLOYMENT_GUIDE.md`
+
+````markdown
+# Concya LLM Deployment Guide
+Deploying Mistral-7B-Instruct-v0.3 on Google Cloud with vLLM
+
+---
+
+## 🧠 Overview
+This guide sets up the Concya **LLM backend** using:
+- **Model:** mistralai/Mistral-7B-Instruct-v0.3  
+- **Server:** vLLM (OpenAI-compatible API)  
+- **GPU:** NVIDIA L4 (g2-standard-8 instance)  
+- **Port:** 8091  
+
+This deployment allows real-time reasoning for the Concya Voice Engine.
+
+---
+
+## 1. Create the GCP Instance
+
+```bash
+gcloud compute instances create concya-llm \
+  --zone=us-east1-c \
+  --machine-type=g2-standard-8 \
+  --accelerator=count=1,type=nvidia-l4 \
+  --maintenance-policy=TERMINATE \
+  --image-family=ubuntu-2204-lts \
+  --image-project=ubuntu-os-cloud \
+  --boot-disk-size=200GB \
+  --tags=concya-llm \
+  --metadata="install-nvidia-driver=True"
+````
+
+---
+
+## 2. Open Firewall for API Access
+
+```bash
+gcloud compute firewall-rules create allow-llm-server \
+  --allow=tcp:8091 \
+  --source-ranges=0.0.0.0/0 \
+  --target-tags=concya-llm \
+  --description="Allow LLM server access"
+```
+
+---
+
+## 3. Connect to the Instance
+
+```bash
+gcloud compute ssh concya-llm --zone=us-east1-c
+```
+
+---
+
+## 4. Verify GPU and Python Setup
+
+```bash
+nvidia-smi
+sudo apt install -y python3-venv python3-pip
+python3 -m venv ~/vllm-venv
+source ~/vllm-venv/bin/activate
+python -m pip install --upgrade pip
+```
+
+---
+
+## 5. Install vLLM + Dependencies
+
+```bash
+pip install "vllm[triton]" fastapi uvicorn
+```
+
+---
+
+## 6. Authenticate Hugging Face
+
+1. Get your token from: [https://huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)
+2. Set it:
+
+   ```bash
+   export HUGGING_FACE_HUB_TOKEN=hf_yourtokenhere
+   ```
+
+---
+
+## 7. Launch the LLM Server
+
+```bash
+python -m vllm.entrypoints.openai.api_server \
+  --model mistralai/Mistral-7B-Instruct-v0.3 \
+  --port 8091 --host 0.0.0.0
+```
+
+---
+
+## 8. Test the Endpoint (from your local machine)
+
+```bash
+curl http://<EXTERNAL_IP>:8091/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "mistralai/Mistral-7B-Instruct-v0.3",
+    "messages": [{"role": "user", "content": "Hello Concya, what is your purpose?"}],
+    "max_tokens": 50
+  }'
+```
+
+✅ You should receive a JSON response with `"content"` — confirming success.
+
+---
+
+## 9. Update Local Connector
+
+**File:** `llm/openai_connector.py`
+
+```python
+import openai
+openai.api_base = "http://<EXTERNAL_IP>:8091/v1"
+openai.api_key = "none"
+MODEL_NAME = "mistralai/Mistral-7B-Instruct-v0.3"
+
+def chat_completion(prompt: str):
+    response = openai.ChatCompletion.create(
+        model=MODEL_NAME,
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=200
+    )
+    return response.choices[0].message["content"].strip()
+```
+
+---
+
+## 10. Test from Local Mac
+
+```bash
+python llm/test_llm.py
+```
+
+Expected output:
+
+```
+LLM Response: Concya is a voice AI engine that helps restaurants handle reservations and conversations.
+```
+
+---
+
+## ✅ Result
+
+You now have:
+
+* **STT server:** Kyutai Moshi (Speech-to-Text)
+* **LLM server:** Mistral 7B via vLLM
+* **TTS server:** (next step)
+
+Your voice pipeline:
+
+```
+🎤 Mic → STT → LLM → TTS → 🔊 Audio reply
+```
+
+---
+
+## 🔁 Redeploy Summary
+
+To redo everything later:
+
+1. Delete old instance:
+
+   ```bash
+   gcloud compute instances delete concya-llm --zone=us-east1-c
+   ```
+2. Follow this guide line-by-line.
+3. Replace `<EXTERNAL_IP>` and `hf_yourtokenhere` as needed.
+
+```
+
+---
+
+Would you like me to generate this as a ready-to-download `.md` file (so you can just keep it in your Concya folder)?
+```
