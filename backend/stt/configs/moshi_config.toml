@@ -1,9 +1,0 @@
-[model]
-repository = "kyutai/stt-1b-en_fr-candle"
-filename = "model.safetensors"
-
-[server]
-host = "0.0.0.0"
-port = 8080
-workers = 1
-device = "cuda"
